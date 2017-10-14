@@ -125,20 +125,14 @@ ProcessingUnit::ProcessingUnit(
 void ProcessingUnit::setPassword(std::size_t index, const void *pw,
                                  std::size_t pwSize)
 {
-    std::size_t size = params->getLanes() * 2 * ARGON2_BLOCK_SIZE;
-    auto buffer = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
-    params->fillFirstBlocks(buffer.get(), pw, pwSize,
+    params->fillFirstBlocks(runner.getInputMemory(index), pw, pwSize,
                             programContext->getArgon2Type(),
                             programContext->getArgon2Version());
-    runner.writeInputMemory(index, buffer.get());
 }
 
 void ProcessingUnit::getHash(std::size_t index, void *hash)
 {
-    std::size_t size = params->getLanes() * ARGON2_BLOCK_SIZE;
-    auto buffer = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
-    runner.readOutputMemory(index, buffer.get());
-    params->finalize(hash, buffer.get());
+    params->finalize(hash, runner.getOutputMemory(index));
 }
 
 void ProcessingUnit::beginProcessing()

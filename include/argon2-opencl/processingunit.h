@@ -27,7 +27,11 @@ public:
             const Device *device, std::size_t batchSize,
             bool bySegment = true, bool precomputeRefs = false);
 
+    /* You can safely call this function after the beginProcessing() call to
+     * prepare the next batch: */
     void setPassword(std::size_t index, const void *pw, std::size_t pwSize);
+    /* You can safely call this function after the beginProcessing() call to
+     * process the previous batch: */
     void getHash(std::size_t index, void *hash);
 
     void beginProcessing();

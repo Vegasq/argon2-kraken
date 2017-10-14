@@ -802,8 +802,10 @@ KernelRunner::KernelRunner(uint32_t type, uint32_t version, uint32_t passes,
                            size_t batchSize, bool bySegment, bool precompute)
     : type(type), version(version), passes(passes), lanes(lanes),
       segmentBlocks(segmentBlocks), batchSize(batchSize), bySegment(bySegment),
-      precompute(precompute), stream(nullptr), memory(nullptr),
-      refs(nullptr), start(nullptr), end(nullptr)
+      precompute(precompute), stream(), memory(), refs(),
+      start(), end(), kernelStart(), kernelEnd(),
+      blocksIn(new uint8_t[batchSize * lanes * 2 * ARGON2_BLOCK_SIZE]),
+      blocksOut(new uint8_t[batchSize * lanes * ARGON2_BLOCK_SIZE])
 {
     // FIXME: check overflow:
     size_t memorySize = batchSize * lanes * segmentBlocks
@@ -818,6 +820,8 @@ KernelRunner::KernelRunner(uint32_t type, uint32_t version, uint32_t passes,
 
     CudaException::check(cudaEventCreate(&start));
     CudaException::check(cudaEventCreate(&end));
+    CudaException::check(cudaEventCreate(&kernelStart));
+    CudaException::check(cudaEventCreate(&kernelEnd));
 
     CudaException::check(cudaStreamCreate(&stream));
 
@@ -886,28 +890,42 @@ KernelRunner::~KernelRunner()
     }
 }
 
-void KernelRunner::writeInputMemory(size_t jobId, const void *buffer)
+void *KernelRunner::getInputMemory(size_t jobId) const
 {
-    std::size_t memorySize = static_cast<size_t>(lanes) * segmentBlocks
-            * ARGON2_SYNC_POINTS * ARGON2_BLOCK_SIZE;
-    std::size_t size = static_cast<size_t>(lanes) * 2 * ARGON2_BLOCK_SIZE;
-    std::size_t offset = memorySize * jobId;
-    auto mem = static_cast<uint8_t *>(memory) + offset;
-    CudaException::check(cudaMemcpyAsync(mem, buffer, size,
-                                         cudaMemcpyHostToDevice, stream));
-    CudaException::check(cudaStreamSynchronize(stream));
+    size_t copySize = lanes * 2 * ARGON2_BLOCK_SIZE;
+    return blocksIn.get() + jobId * copySize;
+}
+const void *KernelRunner::getOutputMemory(size_t jobId) const
+{
+    size_t copySize = lanes * ARGON2_BLOCK_SIZE;
+    return blocksOut.get() + jobId * copySize;
 }
 
-void KernelRunner::readOutputMemory(size_t jobId, void *buffer)
+void KernelRunner::copyInputBlocks()
 {
-    std::size_t memorySize = static_cast<size_t>(lanes) * segmentBlocks
+    size_t jobSize = static_cast<size_t>(lanes) * segmentBlocks
             * ARGON2_SYNC_POINTS * ARGON2_BLOCK_SIZE;
-    std::size_t size = static_cast<size_t>(lanes) * ARGON2_BLOCK_SIZE;
-    std::size_t offset = memorySize * (jobId + 1) - size;
-    auto mem = static_cast<uint8_t *>(memory) + offset;
-    CudaException::check(cudaMemcpyAsync(buffer, mem, size,
-                                         cudaMemcpyDeviceToHost, stream));
-    CudaException::check(cudaStreamSynchronize(stream));
+    size_t copySize = lanes * 2 * ARGON2_BLOCK_SIZE;
+
+    CudaException::check(cudaMemcpy2DAsync(
+                             memory, jobSize,
+                             blocksIn.get(), copySize,
+                             copySize, batchSize, cudaMemcpyHostToDevice,
+                             stream));
+}
+
+void KernelRunner::copyOutputBlocks()
+{
+    size_t jobSize = static_cast<size_t>(lanes) * segmentBlocks
+            * ARGON2_SYNC_POINTS * ARGON2_BLOCK_SIZE;
+    size_t copySize = lanes * ARGON2_BLOCK_SIZE;
+    uint8_t *mem = static_cast<uint8_t *>(memory);
+
+    CudaException::check(cudaMemcpy2DAsync(
+                             blocksOut.get(), copySize,
+                             mem + (jobSize - copySize), jobSize,
+                             copySize, batchSize, cudaMemcpyDeviceToHost,
+                             stream));
 }
 
 void KernelRunner::runKernelSegment(uint32_t lanesPerBlock,
@@ -1075,6 +1093,10 @@ void KernelRunner::run(uint32_t lanesPerBlock, uint32_t jobsPerBlock)
 {
     CudaException::check(cudaEventRecord(start, stream));
 
+    copyInputBlocks();
+
+    CudaException::check(cudaEventRecord(kernelStart, stream));
+
     if (bySegment) {
         for (uint32_t pass = 0; pass < passes; pass++) {
             for (uint32_t slice = 0; slice < ARGON2_SYNC_POINTS; slice++) {
@@ -1087,15 +1109,27 @@ void KernelRunner::run(uint32_t lanesPerBlock, uint32_t jobsPerBlock)
 
     CudaException::check(cudaGetLastError());
 
+    CudaException::check(cudaEventRecord(kernelEnd, stream));
+
+    copyOutputBlocks();
+
     CudaException::check(cudaEventRecord(end, stream));
 }
 
 float KernelRunner::finish()
 {
+    float time = 0.0;
     CudaException::check(cudaStreamSynchronize(stream));
 
-    float time = 0.0;
-    CudaException::check(cudaEventElapsedTime(&time, start, end));
+#ifndef NDEBUG
+    CudaException::check(cudaEventElapsedTime(&time, start, kernelStart));
+    std::cerr << "[INFO] Copy to device took " << time << " ms." << std::endl;
+
+    CudaException::check(cudaEventElapsedTime(&time, kernelEnd, end));
+    std::cerr << "[INFO] Copy from device took " << time << " ms." << std::endl;
+#endif
+
+    CudaException::check(cudaEventElapsedTime(&time, kernelStart, kernelEnd));
     return time;
 }
 

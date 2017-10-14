@@ -15,12 +15,31 @@ enum {
     ARGON2_REFS_PER_BLOCK = ARGON2_BLOCK_SIZE / (2 * sizeof(cl_uint)),
 };
 
+static float getDurationInMs(const cl::Event &start, const cl::Event &end)
+{
+    cl_ulong nsStart = start.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+    cl_ulong nsEnd   = end.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+
+    return (nsEnd - nsStart) / (1000.0F * 1000.0F);
+}
+
+static cl::size_t<3> makeSize3(std::size_t x, std::size_t y, std::size_t z)
+{
+    cl::size_t<3> res;
+    res[0] = x;
+    res[1] = y;
+    res[2] = z;
+    return res;
+}
+
 KernelRunner::KernelRunner(const ProgramContext *programContext,
                            const Argon2Params *params, const Device *device,
                            std::size_t batchSize, bool bySegment, bool precompute)
     : programContext(programContext), params(params), batchSize(batchSize),
       bySegment(bySegment), precompute(precompute),
-      memorySize(params->getMemorySize() * batchSize)
+      memorySize(params->getMemorySize() * batchSize),
+      blocksIn(new std::uint8_t[batchSize * params->getLanes() * 2 * ARGON2_BLOCK_SIZE]),
+      blocksOut(new std::uint8_t[batchSize * params->getLanes() * ARGON2_BLOCK_SIZE])
 {
     auto context = programContext->getContext();
     std::uint32_t passes = params->getTimeCost();
@@ -110,32 +129,27 @@ void KernelRunner::precomputeRefs()
     queue.finish();
 }
 
-void *KernelRunner::mapInputMemory(std::size_t jobId)
+void KernelRunner::copyInputBlocks()
 {
-    std::size_t memorySize = params->getMemorySize();
-    std::size_t mappedSize = params->getLanes() * 2 * ARGON2_BLOCK_SIZE;
-    return queue.enqueueMapBuffer(memoryBuffer, true, CL_MAP_WRITE,
-                                  memorySize * jobId, mappedSize);
+    std::size_t jobSize = params->getMemorySize();
+    std::size_t copySize = params->getLanes() * 2 * ARGON2_BLOCK_SIZE;
+
+    queue.enqueueWriteBufferRect(memoryBuffer, false,
+                                 makeSize3(0, 0, 0), makeSize3(0, 0, 0),
+                                 makeSize3(copySize, batchSize, 1),
+                                 jobSize, 0, copySize, 0, blocksIn.get());
 }
 
-void KernelRunner::unmapInputMemory(void *memory)
+void KernelRunner::copyOutputBlocks()
 {
-    queue.enqueueUnmapMemObject(memoryBuffer, memory);
-}
+    std::size_t jobSize = params->getMemorySize();
+    std::size_t copySize = params->getLanes() * ARGON2_BLOCK_SIZE;
 
-void *KernelRunner::mapOutputMemory(std::size_t jobId)
-{
-    std::size_t memorySize = params->getMemorySize();
-    std::size_t mappedSize = static_cast<std::size_t>(params->getLanes())
-            * ARGON2_BLOCK_SIZE;
-    std::size_t mappedOffset = memorySize * (jobId + 1) - mappedSize;
-    return queue.enqueueMapBuffer(memoryBuffer, true, CL_MAP_READ,
-                                  mappedOffset, mappedSize);
-}
-
-void KernelRunner::unmapOutputMemory(void *memory)
-{
-    queue.enqueueUnmapMemObject(memoryBuffer, memory);
+    queue.enqueueReadBufferRect(memoryBuffer, false,
+                                makeSize3(jobSize - copySize, 0, 0),
+                                makeSize3(0, 0, 0),
+                                makeSize3(copySize, batchSize, 1),
+                                jobSize, 0, copySize, 0, blocksOut.get());
 }
 
 void KernelRunner::run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock)
@@ -162,6 +176,10 @@ void KernelRunner::run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock)
 
     queue.enqueueMarker(&start);
 
+    copyInputBlocks();
+
+    queue.enqueueMarker(&kernelStart);
+
     std::size_t shmemSize = THREADS_PER_LANE * lanesPerBlock * jobsPerBlock
             * sizeof(cl_uint) * 2;
     kernel.setArg<cl::LocalSpaceArg>(0, { shmemSize });
@@ -179,6 +197,10 @@ void KernelRunner::run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock)
                                    globalRange, localRange);
     }
 
+    queue.enqueueMarker(&kernelEnd);
+
+    copyOutputBlocks();
+
     queue.enqueueMarker(&end);
 }
 
@@ -186,10 +208,15 @@ float KernelRunner::finish()
 {
     end.wait();
 
-    cl_ulong nsStart = start.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-    cl_ulong nsEnd   = end.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+#ifndef NDEBUG
+    std::cerr << "[INFO] Copy to device took "
+              << getDurationInMs(start, kernelStart) << " ms." << std::endl;
 
-    return (nsEnd - nsStart) / (1000.0F * 1000.0F);
+    std::cerr << "[INFO] Copy from device took "
+              << getDurationInMs(kernelEnd, end) << " ms." << std::endl;
+#endif
+
+    return getDurationInMs(start, end);
 }
 
 } // namespace opencl

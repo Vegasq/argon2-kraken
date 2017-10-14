@@ -110,18 +110,16 @@ ProcessingUnit::ProcessingUnit(
 void ProcessingUnit::setPassword(std::size_t index, const void *pw,
                                  std::size_t pwSize)
 {
-    void *memory = runner.mapInputMemory(index);
+    void *memory = runner.getInputMemory(index);
     params->fillFirstBlocks(memory, pw, pwSize,
                             programContext->getArgon2Type(),
                             programContext->getArgon2Version());
-    runner.unmapInputMemory(memory);
 }
 
 void ProcessingUnit::getHash(std::size_t index, void *hash)
 {
-    void *memory = runner.mapOutputMemory(index);
+    const void *memory = runner.getOutputMemory(index);
     params->finalize(hash, memory);
-    runner.unmapOutputMemory(memory);
 }
 
 void ProcessingUnit::beginProcessing()

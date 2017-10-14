@@ -4,6 +4,8 @@
 #include "programcontext.h"
 #include "argon2-gpu-common/argon2params.h"
 
+#include <memory>
+
 namespace argon2 {
 namespace opencl {
 
@@ -20,9 +22,15 @@ private:
     cl::CommandQueue queue;
     cl::Kernel kernel;
     cl::Buffer memoryBuffer, refsBuffer;
-    cl::Event start, end;
+    cl::Event start, end, kernelStart, kernelEnd;
 
     std::size_t memorySize;
+
+    std::unique_ptr<std::uint8_t[]> blocksIn;
+    std::unique_ptr<std::uint8_t[]> blocksOut;
+
+    void copyInputBlocks();
+    void copyOutputBlocks();
 
     void precomputeRefs();
 
@@ -38,15 +46,20 @@ public:
 
     std::size_t getBatchSize() const { return batchSize; }
 
+    void *getInputMemory(std::uint32_t jobId) const
+    {
+        std::size_t copySize = params->getLanes() * 2 * ARGON2_BLOCK_SIZE;
+        return blocksIn.get() + jobId * copySize;
+    }
+    const void *getOutputMemory(std::uint32_t jobId) const
+    {
+        std::size_t copySize = params->getLanes() * ARGON2_BLOCK_SIZE;
+        return blocksOut.get() + jobId * copySize;
+    }
+
     KernelRunner(const ProgramContext *programContext,
                  const Argon2Params *params, const Device *device,
                  std::size_t batchSize, bool bySegment, bool precompute);
-
-    void *mapInputMemory(std::size_t jobId);
-    void unmapInputMemory(void *memory);
-
-    void *mapOutputMemory(std::size_t jobId);
-    void unmapOutputMemory(void *memory);
 
     void run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock);
     float finish();

@@ -5,6 +5,7 @@
 
 #include <cuda_runtime.h>
 #include <cstdint>
+#include <memory>
 
 /* workaround weird CMake/CUDA bug: */
 #ifdef argon2
@@ -23,10 +24,16 @@ private:
     bool bySegment;
     bool precompute;
 
-    cudaEvent_t start, end;
+    cudaEvent_t start, end, kernelStart, kernelEnd;
     cudaStream_t stream;
     void *memory;
     void *refs;
+
+    std::unique_ptr<std::uint8_t[]> blocksIn;
+    std::unique_ptr<std::uint8_t[]> blocksOut;
+
+    void copyInputBlocks();
+    void copyOutputBlocks();
 
     void precomputeRefs();
 
@@ -51,8 +58,8 @@ public:
                  bool bySegment, bool precompute);
     ~KernelRunner();
 
-    void writeInputMemory(std::size_t jobId, const void *buffer);
-    void readOutputMemory(std::size_t jobId, void *buffer);
+    void *getInputMemory(std::size_t jobId) const;
+    const void *getOutputMemory(std::size_t jobId) const;
 
     void run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock);
     float finish();
