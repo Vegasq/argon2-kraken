@@ -1,5 +1,4 @@
 #include "programcontext.h"
-#include "kernels.h"
 
 #define THREADS_PER_LANE 32
 

@@ -6,7 +6,7 @@
 #include <memory>
 
 #include "programcontext.h"
-#include "kernels.h"
+#include "kernelrunner.h"
 #include "argon2-gpu-common/argon2params.h"
 
 namespace argon2 {

@@ -49,7 +49,7 @@ if(CUDA_FOUND)
         lib/argon2-cuda/globalcontext.cpp
         lib/argon2-cuda/programcontext.cpp
         lib/argon2-cuda/processingunit.cpp
-        lib/argon2-cuda/kernels.cu
+        lib/argon2-cuda/kernelrunner.cu
     )
 else()
     add_library(argon2-cuda SHARED
@@ -126,7 +126,7 @@ install(FILES
     include/argon2-opencl/processingunit.h
     include/argon2-opencl/kernelrunner.h
     include/argon2-cuda/cudaexception.h
-    include/argon2-cuda/kernels.h
+    include/argon2-cuda/kernelrunner.h
     include/argon2-cuda/device.h
     include/argon2-cuda/globalcontext.h
     include/argon2-cuda/programcontext.h

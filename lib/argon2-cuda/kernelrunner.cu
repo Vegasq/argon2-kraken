@@ -3,7 +3,7 @@
 #define __CUDACC__
 #endif
 
-#include "kernels.h"
+#include "kernelrunner.h"
 #include "cudaexception.h"
 
 #include <stdexcept>
