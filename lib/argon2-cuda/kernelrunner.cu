@@ -929,7 +929,7 @@ void KernelRunner::copyOutputBlocks()
 }
 
 void KernelRunner::runKernelSegment(uint32_t lanesPerBlock,
-                                    uint32_t jobsPerBlock,
+                                    size_t jobsPerBlock,
                                     uint32_t pass, uint32_t slice)
 {
     if (lanesPerBlock > lanes || lanes % lanesPerBlock != 0) {
@@ -1015,7 +1015,7 @@ void KernelRunner::runKernelSegment(uint32_t lanesPerBlock,
 }
 
 void KernelRunner::runKernelOneshot(uint32_t lanesPerBlock,
-                                    uint32_t jobsPerBlock)
+                                    size_t jobsPerBlock)
 {
     if (lanesPerBlock != lanes) {
         throw std::logic_error("Invalid lanesPerBlock!");
@@ -1089,7 +1089,7 @@ void KernelRunner::runKernelOneshot(uint32_t lanesPerBlock,
     }
 }
 
-void KernelRunner::run(uint32_t lanesPerBlock, uint32_t jobsPerBlock)
+void KernelRunner::run(uint32_t lanesPerBlock, size_t jobsPerBlock)
 {
     CudaException::check(cudaEventRecord(start, stream));
 

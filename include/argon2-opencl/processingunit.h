@@ -17,7 +17,7 @@ private:
 
     KernelRunner runner;
     std::uint32_t bestLanesPerBlock;
-    std::uint32_t bestJobsPerBlock;
+    std::size_t bestJobsPerBlock;
 
 public:
     std::size_t getBatchSize() const { return runner.getBatchSize(); }

@@ -19,7 +19,7 @@ static void setCudaDevice(int deviceIndex)
     }
 }
 
-static bool isPowerOfTwo(std::uint32_t x)
+static bool isPowerOfTwo(std::size_t x)
 {
     return (x & (x - 1)) == 0;
 }
@@ -90,7 +90,7 @@ ProcessingUnit::ProcessingUnit(
 #endif
 
         float bestTime = std::numeric_limits<float>::infinity();
-        for (std::uint32_t jpb = 1; jpb <= runner.getMaxJobsPerBlock();
+        for (std::size_t jpb = 1; jpb <= runner.getMaxJobsPerBlock();
              jpb *= 2)
         {
             float time;

@@ -15,7 +15,7 @@ private:
     const ProgramContext *programContext;
     const Argon2Params *params;
 
-    std::uint32_t batchSize;
+    std::size_t batchSize;
     bool bySegment;
     bool precompute;
 
@@ -41,17 +41,17 @@ public:
     }
     std::uint32_t getMaxLanesPerBlock() const { return params->getLanes(); }
 
-    std::uint32_t getMinJobsPerBlock() const { return 1; }
-    std::uint32_t getMaxJobsPerBlock() const { return batchSize; }
+    std::size_t getMinJobsPerBlock() const { return 1; }
+    std::size_t getMaxJobsPerBlock() const { return batchSize; }
 
     std::size_t getBatchSize() const { return batchSize; }
 
-    void *getInputMemory(std::uint32_t jobId) const
+    void *getInputMemory(std::size_t jobId) const
     {
         std::size_t copySize = params->getLanes() * 2 * ARGON2_BLOCK_SIZE;
         return blocksIn.get() + jobId * copySize;
     }
-    const void *getOutputMemory(std::uint32_t jobId) const
+    const void *getOutputMemory(std::size_t jobId) const
     {
         std::size_t copySize = params->getLanes() * ARGON2_BLOCK_SIZE;
         return blocksOut.get() + jobId * copySize;
@@ -61,7 +61,7 @@ public:
                  const Argon2Params *params, const Device *device,
                  std::size_t batchSize, bool bySegment, bool precompute);
 
-    void run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock);
+    void run(std::uint32_t lanesPerBlock, std::size_t jobsPerBlock);
     float finish();
 };
 

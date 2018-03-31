@@ -152,7 +152,7 @@ void KernelRunner::copyOutputBlocks()
                                 jobSize, 0, copySize, 0, blocksOut.get());
 }
 
-void KernelRunner::run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock)
+void KernelRunner::run(std::uint32_t lanesPerBlock, std::size_t jobsPerBlock)
 {
     std::uint32_t lanes = params->getLanes();
     std::uint32_t passes = params->getTimeCost();

@@ -38,17 +38,17 @@ private:
     void precomputeRefs();
 
     void runKernelSegment(std::uint32_t lanesPerBlock,
-                          std::uint32_t jobsPerBlock,
+                          std::size_t jobsPerBlock,
                           std::uint32_t pass, std::uint32_t slice);
     void runKernelOneshot(std::uint32_t lanesPerBlock,
-                          std::uint32_t jobsPerBlock);
+                          std::size_t jobsPerBlock);
 
 public:
     std::uint32_t getMinLanesPerBlock() const { return bySegment ? 1 : lanes; }
     std::uint32_t getMaxLanesPerBlock() const { return lanes; }
 
-    std::uint32_t getMinJobsPerBlock() const { return 1; }
-    std::uint32_t getMaxJobsPerBlock() const { return batchSize; }
+    std::size_t getMinJobsPerBlock() const { return 1; }
+    std::size_t getMaxJobsPerBlock() const { return batchSize; }
 
     std::size_t getBatchSize() const { return batchSize; }
 
@@ -61,7 +61,7 @@ public:
     void *getInputMemory(std::size_t jobId) const;
     const void *getOutputMemory(std::size_t jobId) const;
 
-    void run(std::uint32_t lanesPerBlock, std::uint32_t jobsPerBlock);
+    void run(std::uint32_t lanesPerBlock, std::size_t jobsPerBlock);
     float finish();
 };
 
