@@ -25,61 +25,64 @@ public:
     }
 
     nanosecs runBenchmark(const BenchmarkDirector &director,
-                          PasswordGenerator &pwGen) override
-    {
-        typedef std::chrono::steady_clock clock_type;
-        using namespace argon2;
-        using namespace argon2::cuda;
-
-        auto beVerbose = director.isVerbose();
-        auto batchSize = unit.getBatchSize();
-        if (beVerbose) {
-            std::cout << "Starting computation..." << std::endl;
-        }
-
-        clock_type::time_point checkpt0 = clock_type::now();
-        for (std::size_t i = 0; i < batchSize; i++) {
-            const void *pw;
-            std::size_t pwLength;
-            pwGen.nextPassword(pw, pwLength);
-
-            unit.setPassword(i, pw, pwLength);
-        }
-        clock_type::time_point checkpt1 = clock_type::now();
-
-        unit.beginProcessing();
-        unit.endProcessing();
-
-        clock_type::time_point checkpt2 = clock_type::now();
-        for (std::size_t i = 0; i < batchSize; i++) {
-            uint8_t buffer[HASH_LENGTH];
-            unit.getHash(i, buffer);
-        }
-        clock_type::time_point checkpt3 = clock_type::now();
-
-        if (beVerbose) {
-            clock_type::duration wrTime = checkpt1 - checkpt0;
-            auto wrTimeNs = toNanoseconds(wrTime);
-            std::cout << "    Writing took     "
-                      << RunTimeStats::repr(wrTimeNs) << std::endl;
-        }
-
-        clock_type::duration compTime = checkpt2 - checkpt1;
-        auto compTimeNs = toNanoseconds(compTime);
-        if (beVerbose) {
-            std::cout << "    Computation took "
-                      << RunTimeStats::repr(compTimeNs) << std::endl;
-        }
-
-        if (beVerbose) {
-            clock_type::duration rdTime = checkpt3 - checkpt2;
-            auto rdTimeNs = toNanoseconds(rdTime);
-            std::cout << "    Reading took     "
-                      << RunTimeStats::repr(rdTimeNs) << std::endl;
-        }
-        return compTimeNs;
-    }
+                          PasswordGenerator &pwGen) override;
 };
+
+nanosecs CudaRunner::runBenchmark(const BenchmarkDirector &director,
+                                  PasswordGenerator &pwGen)
+{
+    typedef std::chrono::steady_clock clock_type;
+    using namespace argon2;
+    using namespace argon2::cuda;
+
+    auto beVerbose = director.isVerbose();
+    auto batchSize = unit.getBatchSize();
+    if (beVerbose) {
+        std::cout << "Starting computation..." << std::endl;
+    }
+
+    clock_type::time_point checkpt0 = clock_type::now();
+    for (std::size_t i = 0; i < batchSize; i++) {
+        const void *pw;
+        std::size_t pwLength;
+        pwGen.nextPassword(pw, pwLength);
+
+        unit.setPassword(i, pw, pwLength);
+    }
+    clock_type::time_point checkpt1 = clock_type::now();
+
+    unit.beginProcessing();
+    unit.endProcessing();
+
+    clock_type::time_point checkpt2 = clock_type::now();
+    for (std::size_t i = 0; i < batchSize; i++) {
+        uint8_t buffer[HASH_LENGTH];
+        unit.getHash(i, buffer);
+    }
+    clock_type::time_point checkpt3 = clock_type::now();
+
+    if (beVerbose) {
+        clock_type::duration wrTime = checkpt1 - checkpt0;
+        auto wrTimeNs = toNanoseconds(wrTime);
+        std::cout << "    Writing took     "
+                  << RunTimeStats::repr(wrTimeNs) << std::endl;
+    }
+
+    clock_type::duration compTime = checkpt2 - checkpt1;
+    auto compTimeNs = toNanoseconds(compTime);
+    if (beVerbose) {
+        std::cout << "    Computation took "
+                  << RunTimeStats::repr(compTimeNs) << std::endl;
+    }
+
+    if (beVerbose) {
+        clock_type::duration rdTime = checkpt3 - checkpt2;
+        auto rdTimeNs = toNanoseconds(rdTime);
+        std::cout << "    Reading took     "
+                  << RunTimeStats::repr(rdTimeNs) << std::endl;
+    }
+    return compTimeNs;
+}
 
 int CudaExecutive::runBenchmark(const BenchmarkDirector &director) const
 {

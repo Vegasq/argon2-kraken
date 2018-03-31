@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+Argon2Runner::~Argon2Runner() { }
+
+BenchmarkExecutive::~BenchmarkExecutive() { }
+
 int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
 {
     DummyPasswordGenerator pwGen;

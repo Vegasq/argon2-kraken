@@ -11,6 +11,7 @@ class BenchmarkDirector;
 class Argon2Runner
 {
 public:
+    virtual ~Argon2Runner();
     virtual nanosecs runBenchmark(const BenchmarkDirector &director,
                                   PasswordGenerator &pwGen) = 0;
 };
@@ -60,6 +61,7 @@ public:
 class BenchmarkExecutive
 {
 public:
+    virtual ~BenchmarkExecutive();
     virtual int runBenchmark(const BenchmarkDirector &director) const = 0;
 };
 

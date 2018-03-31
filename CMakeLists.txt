@@ -45,6 +45,7 @@ target_include_directories(argon2-gpu-common PRIVATE
 
 if(CUDA_FOUND)
     cuda_add_library(argon2-cuda SHARED
+        lib/argon2-cuda/cudaexception.cpp
         lib/argon2-cuda/device.cpp
         lib/argon2-cuda/globalcontext.cpp
         lib/argon2-cuda/programcontext.cpp

@@ -19,10 +19,7 @@ private:
 public:
     CudaException(cudaError_t res) : res(res) { }
 
-    const char *what() const noexcept override
-    {
-        return cudaGetErrorString(res);
-    }
+    const char *what() const noexcept override;
 
     static void check(cudaError_t res)
     {

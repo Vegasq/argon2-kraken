@@ -133,30 +133,33 @@ class CpuRunner : public Argon2Runner
 {
 public:
     nanosecs runBenchmark(const BenchmarkDirector &director,
-                          PasswordGenerator &pwGen) override
-    {
-        typedef std::chrono::steady_clock clock_type;
-
-        auto beVerbose = director.isVerbose();
-        if (beVerbose) {
-            std::cout << "Starting computation..." << std::endl;
-        }
-
-        clock_type::time_point start = clock_type::now();
-
-        ParallelRunner runner(director, pwGen);
-        runner.wait();
-
-        clock_type::time_point end = clock_type::now();
-        clock_type::duration compTime = end - start;
-        auto compTimeNs = toNanoseconds(compTime);
-        if (beVerbose) {
-            std::cout << "    Computation took "
-                      << RunTimeStats::repr(compTimeNs) << std::endl;
-        }
-        return compTimeNs;
-    }
+                          PasswordGenerator &pwGen) override;
 };
+
+nanosecs CpuRunner::runBenchmark(const BenchmarkDirector &director,
+                                 PasswordGenerator &pwGen)
+{
+    typedef std::chrono::steady_clock clock_type;
+
+    auto beVerbose = director.isVerbose();
+    if (beVerbose) {
+        std::cout << "Starting computation..." << std::endl;
+    }
+
+    clock_type::time_point start = clock_type::now();
+
+    ParallelRunner runner(director, pwGen);
+    runner.wait();
+
+    clock_type::time_point end = clock_type::now();
+    clock_type::duration compTime = end - start;
+    auto compTimeNs = toNanoseconds(compTime);
+    if (beVerbose) {
+        std::cout << "    Computation took "
+                  << RunTimeStats::repr(compTimeNs) << std::endl;
+    }
+    return compTimeNs;
+}
 
 int CpuExecutive::runBenchmark(const BenchmarkDirector &director) const
 {
