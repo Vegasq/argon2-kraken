@@ -194,10 +194,6 @@ std::size_t runTestCases(const GlobalContext &global, const Device &device,
     return failures;
 }
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define ARRAY_BEGIN(a) (a)
-#define ARRAY_END(a) ((a) + ARRAY_SIZE(a))
-
 template<class Device, class GlobalContext,
          class ProgramContext, class ProcessingUnit>
 int runAllTests(const char *progname, const char *name, std::size_t deviceIndex,
@@ -227,41 +223,41 @@ int runAllTests(const char *progname, const char *name, std::size_t deviceIndex,
 
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_I, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(CASES_I_10), ARRAY_END(CASES_I_10));
+             std::begin(CASES_I_10), std::end(CASES_I_10));
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_I, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(CASES_I_13), ARRAY_END(CASES_I_13));
+             std::begin(CASES_I_13), std::end(CASES_I_13));
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_D, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(CASES_D_10), ARRAY_END(CASES_D_10));
+             std::begin(CASES_D_10), std::end(CASES_D_10));
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_D, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(CASES_D_13), ARRAY_END(CASES_D_13));
+             std::begin(CASES_D_13), std::end(CASES_D_13));
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_ID, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(CASES_ID_10), ARRAY_END(CASES_ID_10));
+             std::begin(CASES_ID_10), std::end(CASES_ID_10));
     failures += runTestCases<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_ID, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(CASES_ID_13), ARRAY_END(CASES_ID_13));
+             std::begin(CASES_ID_13), std::end(CASES_ID_13));
 
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_I, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_I, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_D, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_D, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_ID, argon2::ARGON2_VERSION_10,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     failures += runParamsVsRef<Device, GlobalContext, ProgramContext, ProcessingUnit>
             (global, device, ARGON2_ID, argon2::ARGON2_VERSION_13,
-             ARRAY_BEGIN(TEST_PARAMS), ARRAY_END(TEST_PARAMS));
+             std::begin(TEST_PARAMS), std::end(TEST_PARAMS));
     return 0;
 }
 
