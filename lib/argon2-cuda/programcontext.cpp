@@ -7,7 +7,7 @@ namespace cuda {
 
 ProgramContext::ProgramContext(
         const GlobalContext *globalContext,
-        const std::vector<Device> &devices,
+        const std::vector<Device> &,
         Type type, Version version)
     : globalContext(globalContext), type(type), version(version)
 {

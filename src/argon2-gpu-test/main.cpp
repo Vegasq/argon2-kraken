@@ -289,7 +289,7 @@ static CommandLineParser<Arguments> buildCmdLineParser()
 
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t index) {
-                state.deviceIndex = (std::size_t)index;
+                state.deviceIndex = index;
             }), "device", 'd', "use device with index INDEX", "0", "INDEX"),
 
         new FlagOption<Arguments>(

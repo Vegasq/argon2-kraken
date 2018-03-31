@@ -21,19 +21,19 @@ int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
     if (beVerbose) {
         auto &time = stats.getNanoseconds();
         std::cout << "Mean computation time: "
-                  << RunTimeStats::repr((nanosecs)time.getMean())
+                  << RunTimeStats::repr(nanosecs(time.getMean()))
                   << std::endl;
         std::cout << "Mean deviation: "
-                  << RunTimeStats::repr((nanosecs)time.getMeanDeviation())
+                  << RunTimeStats::repr(nanosecs(time.getMeanDeviation()))
                   << " (" << time.getMeanDeviationPerMean() * 100.0 << "%)"
                   << std::endl;
 
         auto &perHash = stats.getNanosecsPerHash();
         std::cout << "Mean computation time (per hash): "
-                  << RunTimeStats::repr((nanosecs)perHash.getMean())
+                  << RunTimeStats::repr(nanosecs(perHash.getMean()))
                   << std::endl;
         std::cout << "Mean deviation (per hash): "
-                  << RunTimeStats::repr((nanosecs)perHash.getMeanDeviation())
+                  << RunTimeStats::repr(nanosecs(perHash.getMeanDeviation()))
                   << std::endl;
         return 0;
     }

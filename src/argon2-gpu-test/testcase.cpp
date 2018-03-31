@@ -1,7 +1,7 @@
 #include "testcase.h"
 
 static char toHex(std::uint8_t digit) {
-    return digit >= 10 ? 'a' + (digit - 10) : '0' + digit;
+    return digit >= 10 ? 'a' + char(digit - 10) : char('0' + digit);
 }
 
 static void dumpBytes(std::ostream &out, const void *data, std::size_t size)

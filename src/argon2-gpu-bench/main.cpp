@@ -12,9 +12,6 @@ using namespace libcommandline;
 
 struct Arguments
 {
-    bool showHelp = false;
-    bool listDevices = false;
-
     std::string mode = "cuda";
 
     std::size_t deviceIndex = 0;
@@ -28,9 +25,12 @@ struct Arguments
     std::size_t m_cost = 1024;
     std::size_t lanes = 1;
     std::size_t batchSize = 16;
+    std::size_t sampleCount = 10;
     std::string kernelType = "by-segment";
     bool precomputeRefs = false;
-    std::size_t sampleCount = 10;
+
+    bool showHelp = false;
+    bool listDevices = false;
 };
 
 static CommandLineParser<Arguments> buildCmdLineParser()
@@ -49,7 +49,7 @@ static CommandLineParser<Arguments> buildCmdLineParser()
 
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t index) {
-                state.deviceIndex = (std::size_t)index;
+                state.deviceIndex = index;
             }), "device", 'd', "use device with index INDEX", "0", "INDEX"),
 
         new ArgumentOption<Arguments>(
@@ -67,23 +67,23 @@ static CommandLineParser<Arguments> buildCmdLineParser()
             "version", 'v', "Argon2 version (1.0|1.3)", "1.3", "VERSION"),
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t num) {
-                state.t_cost = (std::size_t)num;
+                state.t_cost = num;
             }), "t-cost", 'T', "time cost", "1", "N"),
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t num) {
-                state.m_cost = (std::size_t)num;
+                state.m_cost = num;
             }), "m-cost", 'M', "memory cost", "1024", "N"),
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t num) {
-                state.lanes = (std::size_t)num;
+                state.lanes = num;
             }), "lanes", 'L', "number of lanes", "1", "N"),
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t num) {
-                state.batchSize = (std::size_t)num;
+                state.batchSize = num;
             }), "batch-size", 'b', "number of tasks per batch", "16", "N"),
         new ArgumentOption<Arguments>(
             makeNumericHandler<Arguments, std::size_t>([] (Arguments &state, std::size_t num) {
-                state.sampleCount = (std::size_t)num;
+                state.sampleCount = num;
             }), "samples", 's', "number of batches to run and measure", "10", "N"),
         new ArgumentOption<Arguments>(
             [] (Arguments &state, const std::string &type) { state.kernelType = type; },

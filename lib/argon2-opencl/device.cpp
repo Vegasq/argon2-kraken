@@ -230,7 +230,7 @@ std::string Device::getInfo() const
                       { CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, "Out-of-order execution" },
                       { CL_QUEUE_PROFILING_ENABLE, "Profiling" },
                   }) << std::endl;
-    return std::move(out.str());
+    return out.str();
 }
 
 } // namespace opencl

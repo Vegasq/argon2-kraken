@@ -33,7 +33,7 @@ cl::Program KernelLoader::loadArgon2Program(
     try {
         std::string opts = buildOpts.str();
         prog.build(opts.c_str());
-    } catch (const cl::Error &err) {
+    } catch (const cl::Error &) {
         std::cerr << "ERROR: Failed to build program:" << std::endl;
         for (cl::Device &device : context.getInfo<CL_CONTEXT_DEVICES>()) {
             std::cerr << "  Build log from device '" << device.getInfo<CL_DEVICE_NAME>() << "':" << std::endl;
