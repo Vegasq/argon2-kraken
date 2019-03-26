@@ -146,6 +146,8 @@ nanosecs CpuRunner::runBenchmark(const BenchmarkDirector &director,
         std::cout << "Starting computation..." << std::endl;
     }
 
+    FLAG_clear_internal_memory = 0;
+
     clock_type::time_point start = clock_type::now();
 
     ParallelRunner runner(director, pwGen);
