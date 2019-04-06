@@ -1,4 +1,10 @@
-# argon2-gpu [![build status](https://gitlab.com/omos/argon2-gpu/badges/master/build.svg)](https://gitlab.com/omos/argon2-gpu/commits/master)
+# argon2-gpu 
+
+Forked from the original project by Ondrej Mosnacek which can be found at <https://gitlab.com/omos/argon2-gpu>.
+
+In this repo I try to incorporate small changes to adapt this tool for as a cracker or generator of hashes. 
+
+The rest of readme is from the original repo.
 
 A proof-of-concept GPU password cracker for Argon2 hashes.
 
