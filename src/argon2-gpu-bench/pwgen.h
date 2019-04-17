@@ -49,7 +49,7 @@ private:
 public:
     FilePasswordGenerator(std::string file)
     {
-        pwdFile = open(file);
+        pwdFile.open(file);
         if (! pwdFile.is_open()) {
             std::cerr << "Error opening password file." << std::endl;
         }
