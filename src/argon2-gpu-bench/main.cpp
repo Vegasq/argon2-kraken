@@ -94,7 +94,7 @@ static CommandLineParser<Arguments> buildCmdLineParser()
             "precompute-refs", 'p', "precompute reference indices with Argon2i"),
             new ArgumentOption<Arguments>(
             [] (Arguments &state, const std::string &pwdfile) { state.pwdfile = pwdfile; },
-                        "pwdfile", 'P', "input file to take passwords from, so far avlid only for CPU mode", "", "TYPE")
+                        "pwdfile", 'P', "input file to take passwords from, so far avlid only for CPU mode", "", "TYPE"),
 
         new FlagOption<Arguments>(
             [] (Arguments &state) { state.showHelp = true; },
