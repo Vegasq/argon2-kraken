@@ -50,7 +50,7 @@ public:
     {
         pwdFile = open(file);
         if (! pwdFile.is_open()) {
-            std::cerr << "Error opening password file." << std:endl;
+            std::cerr << "Error opening password file." << std::endl;
         }
     }
 
@@ -60,6 +60,7 @@ public:
 
     void nextPassword(const void *&pw, std::size_t &pwSize) override
     {
+        currentPw.resize(PASSWORD_LENGTH);
         getline(pwdFile, currentPw);
         pw = currentPw.data();
         pwSize = currentPw.size();
