@@ -8,11 +8,9 @@ BenchmarkExecutive::~BenchmarkExecutive() { }
 
 int BenchmarkDirector::runBenchmark(Argon2Runner &runner) const
 {
-    if (pwdFile == "") {
+    DummyPasswordGenerator pwGen;
+    if (pwdFile != "") {
         FilePasswordGenerator pwGen(pwdFile);
-    }
-    else{
-        DummyPasswordGenerator pwGen;
     }
     RunTimeStats stats(batchSize);
     for (std::size_t i = 0; i < samples; i++) {
