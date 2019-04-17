@@ -5,6 +5,7 @@
 #include <string>
 #include <chrono>
 #include<iostream>
+#include<fstream>
 
 class PasswordGenerator
 {
