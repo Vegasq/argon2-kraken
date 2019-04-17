@@ -46,7 +46,7 @@ private:
     static constexpr std::size_t PASSWORD_LENGTH = 64;
 
 public:
-    FilePasswordGenerator(std:string file)
+    FilePasswordGenerator(std::string file)
     {
         pwdFile = open(file);
         if (! pwdFile.is_open()) {
