@@ -4,6 +4,7 @@
 #include <random>
 #include <string>
 #include <chrono>
+#include<iostream>
 
 class PasswordGenerator
 {
@@ -35,5 +36,35 @@ public:
         pwSize = currentPw.size();
     }
 };
+
+class FilePasswordGenerator : public PasswordGenerator
+{
+private:
+    std::string currentPw;
+    std::ifstream pwdFile;
+
+    static constexpr std::size_t PASSWORD_LENGTH = 64;
+
+public:
+    FilePasswordGenerator(std:string file)
+    {
+        pwdFile = open(file);
+        if (! pwdFile.is_open()) {
+            std::cerr << "Error opening password file." << std:endl;
+        }
+    }
+
+    ~FilePasswordGenerator() {
+        pwdFile.close();
+    }
+
+    void nextPassword(const void *&pw, std::size_t &pwSize) override
+    {
+        getline(pwdFile, currentPw);
+        pw = currentPw.data();
+        pwSize = currentPw.size();
+    }
+};
+
 
 #endif // PWGEN_H

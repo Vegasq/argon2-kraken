@@ -27,6 +27,7 @@ private:
     bool bySegment, precomputeRefs;
     std::string outputMode, outputType;
     bool beVerbose;
+    std::string pwdFile;
 
 public:
     const std::string &getProgname() const { return progname; }
@@ -46,12 +47,13 @@ public:
                       std::size_t batchSize, bool bySegment,
                       bool precomputeRefs, std::size_t samples,
                       const std::string &outputMode,
-                      const std::string &outputType)
+                      const std::string &outputType, const std::string &pwdfile)
         : progname(progname), type(type), version(version),
           t_cost(t_cost), m_cost(m_cost), lanes(lanes), batchSize(batchSize),
           samples(samples), bySegment(bySegment), precomputeRefs(precomputeRefs),
           outputMode(outputMode), outputType(outputType),
-          beVerbose(outputMode == "verbose")
+          beVerbose(outputMode == "verbose"),
+          pwdFile(pwdfile)
     {
     }
 

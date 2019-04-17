@@ -31,6 +31,7 @@ struct Arguments
 
     bool showHelp = false;
     bool listDevices = false;
+    std::string pwdfile = "";
 };
 
 static CommandLineParser<Arguments> buildCmdLineParser()
@@ -91,6 +92,9 @@ static CommandLineParser<Arguments> buildCmdLineParser()
         new FlagOption<Arguments>(
             [] (Arguments &state) { state.precomputeRefs = true; },
             "precompute-refs", 'p', "precompute reference indices with Argon2i"),
+            new ArgumentOption<Arguments>(
+            [] (Arguments &state, const std::string &pwdfile) { state.pwdfile = pwdfile; },
+                        "pwdfile", 'P', "input file to take passwords from, so far avlid only for CPU mode", "", "TYPE")
 
         new FlagOption<Arguments>(
             [] (Arguments &state) { state.showHelp = true; },
@@ -151,7 +155,7 @@ int main(int, const char * const *argv)
     BenchmarkDirector director(argv[0], type, version,
             args.t_cost, args.m_cost, args.lanes, args.batchSize,
             bySegment, args.precomputeRefs, args.sampleCount,
-            args.outputMode, args.outputType);
+            args.outputMode, args.outputType, args.pwdfile);
     if (args.mode == "opencl") {
         OpenCLExecutive exec(args.deviceIndex, args.listDevices);
         return exec.runBenchmark(director);
