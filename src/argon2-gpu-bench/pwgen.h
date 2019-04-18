@@ -47,7 +47,6 @@ public:
         currentPw.resize(PASSWORD_LENGTH);
         if (fileUsed) {
             getline(pwdFile, currentPw);
-            std::cout << "generated " << currentPw << std::endl;
         }
         else {
             for (std::size_t i = 0; i < PASSWORD_LENGTH; i++) {
