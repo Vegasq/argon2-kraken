@@ -42,6 +42,11 @@ private:
                     break;
 
                 pwGen.nextPassword(pw, pwSize);
+                /*std::vector<char> printpw((char *)pw, (char *)pw + pwSize);
+                for (std::vector<char>::iterator it = printpw.begin(); it != printpw.end(); ++it) {
+                    std::cout << *it;
+                }
+                std::cout << std::endl;*/
                 jobsNotStarted--;
             }
 
