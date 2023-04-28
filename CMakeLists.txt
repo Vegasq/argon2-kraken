@@ -24,7 +24,8 @@ endif()
 
 if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};
-        -std=c++11;-O3;--ptxas-options=-v;-arch sm_30;-lineinfo
+        -std=c++11;-O3;--ptxas-options=-v;-arch sm_80
+        ;-lineinfo
     )
 endif()
 
@@ -88,12 +89,21 @@ target_link_libraries(argon2-opencl
     argon2-gpu-common -lOpenCL
 )
 
-add_executable(argon2-gpu-test
-    src/argon2-gpu-test/main.cpp
-    src/argon2-gpu-test/testcase.cpp
+add_executable(argon2-kraken
+    src/argon2-kraken/main.cpp
 )
-target_include_directories(argon2-gpu-test PRIVATE src/argon2-gpu-test)
-target_link_libraries(argon2-gpu-test
+
+# add_library(kraken SHARED
+#     src/argon2-kraken/main.cpp
+# )
+# target_include_directories(kraken PRIVATE src/argon2-kraken)
+# target_link_libraries(kraken
+#     argon2-cuda argon2-opencl argon2 -lOpenCL
+# )
+
+
+target_include_directories(argon2-kraken PRIVATE src/argon2-kraken)
+target_link_libraries(argon2-kraken
     argon2-cuda argon2-opencl argon2 -lOpenCL
 )
 
@@ -109,8 +119,8 @@ target_link_libraries(argon2-gpu-bench
     argon2-cuda argon2-opencl argon2 -lOpenCL
 )
 
-add_test(argon2-gpu-test-opencl argon2-gpu-test -m opencl)
-add_test(argon2-gpu-test-cuda argon2-gpu-test -m cuda)
+add_test(argon2-kraken-opencl argon2-kraken -m opencl)
+add_test(argon2-kraken-cuda argon2-kraken -m cuda)
 
 install(
     TARGETS argon2-gpu-common argon2-opencl argon2-cuda
@@ -135,6 +145,6 @@ install(FILES
     DESTINATION ${INCLUDE_INSTALL_DIR}
 )
 install(
-    TARGETS argon2-gpu-bench argon2-gpu-test
+    TARGETS argon2-gpu-bench argon2-kraken
     DESTINATION ${BINARY_INSTALL_DIR}
 )
