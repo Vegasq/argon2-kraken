@@ -22,9 +22,11 @@ else()
     add_definitions(-DHAVE_CUDA=0)
 endif()
 
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
 if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};
-        -std=c++11;-O3;--ptxas-options=-v;-arch sm_30;-lineinfo
+        -std=c++11;-O3;--ptxas-options=-v;-arch sm_60
+        ;-lineinfo
     )
 endif()
 
@@ -97,6 +99,24 @@ target_link_libraries(argon2-gpu-test
     argon2-cuda argon2-opencl argon2 -lOpenCL
 )
 
+add_executable(argon2-kraken
+    src/argon2-kraken/main.cpp
+)
+
+# add_library(kraken SHARED
+#     src/argon2-kraken/main.cpp
+# )
+# target_include_directories(kraken PRIVATE src/argon2-kraken)
+# target_link_libraries(kraken
+#     argon2-cuda argon2-opencl argon2 -lOpenCL
+# )
+
+
+target_include_directories(argon2-kraken PRIVATE src/argon2-kraken)
+target_link_libraries(argon2-kraken
+    argon2-cuda argon2-opencl argon2 -lOpenCL
+)
+
 add_executable(argon2-gpu-bench
     src/argon2-gpu-bench/cpuexecutive.cpp
     src/argon2-gpu-bench/cudaexecutive.cpp
@@ -135,6 +155,6 @@ install(FILES
     DESTINATION ${INCLUDE_INSTALL_DIR}
 )
 install(
-    TARGETS argon2-gpu-bench argon2-gpu-test
+    TARGETS argon2-gpu-bench argon2-gpu-test argon2-kraken
     DESTINATION ${BINARY_INSTALL_DIR}
 )
