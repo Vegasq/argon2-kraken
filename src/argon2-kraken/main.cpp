@@ -19,7 +19,10 @@
 #include <fstream>
 #include <string>
 
-
+#include <iostream>
+#include <vector>
+#include <map>
+#include <sqlite3.h>
 
 template <class Device, class GlobalContext,
           class ProgramContext, class ProcessingUnit>
@@ -239,7 +242,7 @@ Argon2ParamsData parse_argon2_hash(const std::string &argon2_hash)
     return data;
 }
 
-bool VerifyHash(const std::vector<std::string> &passwords, const std::string &hash, const argon2::Argon2Params &params, argon2::opencl::Device &device, argon2::Type &type, argon2::Version &version)
+int VerifyHash(const std::vector<std::string> &passwords, const std::string &hash, const argon2::Argon2Params &params, argon2::opencl::Device &device, argon2::Type &type, argon2::Version &version)
 {
     argon2::opencl::GlobalContext global;
     argon2::opencl::ProgramContext progCtx(&global, {device}, type, version);
@@ -248,34 +251,50 @@ bool VerifyHash(const std::vector<std::string> &passwords, const std::string &ha
     std::unique_ptr<uint8_t[]> computedHash(new uint8_t[params.getOutputLength() * passwords.size()]);
 
     for (std::size_t i = 0; i < passwords.size(); i++) {
-        const void *password_c = static_cast<const void *>(passwords[i].c_str());
-        std::size_t size_c = passwords[i].length();
-
-        processingUnit.setPassword(i, password_c, size_c);
+        // std::cout << passwords[i].data() << "\n";
+        processingUnit.setPassword(i, passwords[i].data(), passwords[i].size());
     }
+    
+    // std::cout << "salt size " << params.getSaltLength() << "\n";
+    // std::cout << "hash size " << params.getOutputLength() << "\n";
 
-    std::cout <<"start proc\n";
+
+    // std::cout <<"start proc\n";
+
     processingUnit.beginProcessing();
     processingUnit.endProcessing();
-    std::cout <<"done proc\n";
+
+    // std::cout <<"done proc\n";
 
     for (std::size_t i = 0; i < passwords.size(); i++) {
         processingUnit.getHash(i, computedHash.get() + i * params.getOutputLength());
-    }
 
-    for (std::size_t i = 0; i < passwords.size(); i++) {
+        std::cout << "Checking guess\n";
+        std::cout << passwords[i]  << std::endl;
+        std::cout << "expected hash: " << stringToHex(hash.data()) << std::endl;
+
+        std::string out_hash(reinterpret_cast<const char*>(computedHash.get() + i * params.getOutputLength()), params.getOutputLength());
+        std::cout << "out hash: " << stringToHex(out_hash) << std::endl;
+
         if (std::memcmp(hash.data(), computedHash.get() + i * params.getOutputLength(), params.getOutputLength()) == 0) {
-            return true;
+            return i;
         }
     }
 
-    return false;
+    // for (std::size_t i = 0; i < passwords.size(); i++) {
+    //     if (std::memcmp(hash.data(), computedHash.get() + i * params.getOutputLength(), params.getOutputLength()) == 0) {
+    //         return i;
+    //     }
+    // }
+
+    return -1;
 }
 
-extern "C" bool Compare(std::string hash, const std::vector<std::string> &passwords)
+extern "C" int Compare(std::string hash, const std::vector<std::string> &passwords)
 {
     Argon2ParamsData paramsData = parse_argon2_hash(hash);
 
+    std::cout << hash << "\n";
     std::cout << paramsData.hash << "\n";
     std::cout << paramsData.salt << "\n";
 
@@ -286,43 +305,64 @@ extern "C" bool Compare(std::string hash, const std::vector<std::string> &passwo
     }
 
     const void *salt2_c = static_cast<const void *>(paramsData.salt.c_str());
-    argon2::Argon2Params params2(
-        paramsData.hash.length() / 2, salt2_c, salt_size, nullptr, 0, nullptr, 0, paramsData.timeCost, paramsData.memoryCost, paramsData.parallelism);
+    argon2::Argon2Params params(
+        paramsData.hash.length() / 2, 
+        salt2_c, salt_size, 
+        nullptr, 0, 
+        nullptr, 0, 
+        paramsData.timeCost, paramsData.memoryCost, paramsData.parallelism);
 
     std::string hex_hash = hexToString(paramsData.hash);
-    const std::uint8_t *saltBytes2 = static_cast<const std::uint8_t *>(params2.getSalt());
-    std::uint32_t saltLength2 = params2.getSaltLength();
+    // const std::uint8_t *saltBytes2 = static_cast<const std::uint8_t *>(params.getSalt());
+    // std::uint32_t saltLength2 = params.getSaltLength();
     argon2::opencl::Device device = getDeviceToUse<argon2::opencl::Device, argon2::opencl::GlobalContext,
                                                    argon2::opencl::ProgramContext, argon2::opencl::ProcessingUnit>();
 
-    bool result = VerifyHash(passwords, hex_hash, params2, device, paramsData.type, paramsData.version);
-
-    if (result != true) {
-        std::cout << "FAIL\n";
-    } else {
-        std::cout << "OK\n";
-    }
-    return result;
+    return VerifyHash(passwords, hex_hash, params, device, paramsData.type, paramsData.version);
 }
 
 
+std::map<std::string, std::vector<std::string>> buildTasks(std::string leftlist, std::string wordlist){
+    // TODO: memory concerns
+
+    // Open the input files.
+    std::ifstream ll_file(leftlist);
+    if (!ll_file.is_open()) {
+        throw std::runtime_error("Cannot open ll_file.txt");
+    }
+
+    std::ifstream wl_file(wordlist);
+    if (!wl_file.is_open()) {
+        throw std::runtime_error("Cannot open wl_file.txt");
+    }
+
+    std::map<std::string, std::vector<std::string>> data;
+
+    // Read the input files and add jobs to the vector.
+    std::string hash, plain;
+    while (std::getline(ll_file, hash) && std::getline(wl_file, plain)) {
+        data[hash].push_back(plain);
+    }
+
+    ll_file.close();
+    wl_file.close();
+
+    return data;
+}
+
 int main(int, const char *const *argv)
 {
-    // run("/home/vegasq/argon2.ll", "/home/vegasq/argon2.wl", "/home/vegasq/potfile");
+    std::map<std::string, std::vector<std::string>> tasks = buildTasks("/home/vegasq/argon2.ll", "/home/vegasq/argon2.wl");
 
-    // std::string inp = "$argon2id$v=19$m=65536,t=1,p=4$4BdYAuSBedDXaBQhdezjcA$pVvevhEVyX5yuB4y/xibeNbEXEDu3U5sqlwoB5awce4";
-    std::string inp = "$argon2id$v=19$m=65536,t=1,p=4$4BdYAuSBedDXaBQhdezjcA$pVvevhEVyX5yuB4y/xibeNbEXEDu3U5sqlwoB5awce4";
-    // std::string inp = "$argon2d$v=19$m=65536,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$0YSukkrMxraKgRJAS6efTex9v67iMSNy14P0nyWLArE";
-    std::string password = "password";
-
-    std::vector<std::string> passwords = { "foo", password, password, "bar" };
-
-    if (Compare(inp, passwords))
-    {
-        std::cout << "Password is correct." << std::endl;
-    }
-    else
-    {
-        std::cout << "Password is incorrect." << std::endl;
+    for (const auto &task : tasks) {
+        int i = Compare(task.first, task.second);
+        if (i >= 0)
+        {
+            std::cout << "Password is correct. " << task.second[i] << std::endl;
+        }
+        else
+        {
+            std::cout << "Password is incorrect." << std::endl;
+        }
     }
 }
