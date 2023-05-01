@@ -1,3 +1,7 @@
+#include <base64.hpp>
+#include <string>
+
+
 std::string base64_decode(std::string encoded_str)
 {
     std::string base64_chars =

@@ -5,12 +5,36 @@
 #include <future>
 #include <algorithm>
 
+#define CL_TARGET_OPENCL_VERSION 300
+
 #include "argon2-gpu-common/argon2params.h"
 #include "argon2-opencl/processingunit.h"
 #include "argon2-cuda/processingunit.h"
 #include "argon2.h"
 
-#include "hash_parser.cpp"
+#include "hash_parser.hpp"
+#include "base64.hpp"
+#include "strings_tools.hpp"
+
+
+// In Argon2, the memory size is defined in kilobytes, and the amount of memory used
+// is calculated as m times the block size r times the parallelism p.
+//
+// The block size r is a fixed parameter in Argon2 and is equal to 1024 bytes.
+// Therefore, with m=65536 and a parallelism factor of p=1, the amount of memory used
+// would be m*r*p = 65536*1024*1 = 67,108,864 bytes or 64 MB.
+//
+// TODO: Detect amount of workers based on available GPU memory.
+// 1080TI I use for testing has 11264 MB of on board memory, example of the hash used for testing:
+//
+// >> $argon2id$v=19$m=65536,t=1,p=4$qK32Vuin0v8USlgec6lDFw$w5yjWJqZxCfM4EO3S9jBONpfCx0EBlyxd3MfRFhdn6U
+//
+// 65536*1024*4 == 268Mb
+// 11264 / 268 == 42 (lol)
+//
+// BUT! At least in case of 1080TI we are not getting anywhere close to this memory utilization
+// (floats around 20%), as GPU chip itself is a bottleneck that is being used up to 99%.
+const int MaxWorkers = 42;
 
 
 template <class Device, class GlobalContext, class ProgramContext, class ProcessingUnit>
@@ -20,8 +44,6 @@ Device getDeviceToUse()
     auto &devices = global.getAllDevices();
     return devices[0];
 }
-
-
 
 template <typename Device, typename GlobalContext, typename ProgramContext, typename ProcessingUnit>
 int compareHashImpl(
@@ -34,6 +56,7 @@ int compareHashImpl(
     Device device = getDeviceToUse<Device, GlobalContext, ProgramContext, ProcessingUnit>();
     GlobalContext global;
     ProgramContext progCtx(&global, {device}, type, version);
+    // I might be mistaken, but enabling precomputation actually decreases the performance.
     ProcessingUnit processingUnit(&progCtx, &params, &device, passwords.size(), false, false);
     std::unique_ptr<uint8_t[]> computedHash(new uint8_t[params.getOutputLength() * passwords.size()]);
 
@@ -55,11 +78,11 @@ int compareHashImpl(
     return -1;
 }
 
-int Compare(const std::string &mode, const std::string &hash, const std::vector<std::string> &passwords)
+extern "C" int Compare(const std::string &mode, const std::string &hash, const std::vector<std::string> &passwords)
 {
     Argon2ParamsData paramsData = parseArgon2Hash(hash);
 
-    uint saltSize = paramsData.salt.length();
+    std::size_t saltSize = paramsData.salt.length();
 
     // TODO: Why do we get null in it and why .length() counts it in?
     if (paramsData.salt[saltSize-1] == 0) {
@@ -84,13 +107,15 @@ int Compare(const std::string &mode, const std::string &hash, const std::vector<
         return compareHashImpl<argon2::cuda::Device, argon2::cuda::GlobalContext, argon2::cuda::ProgramContext, argon2::cuda::ProcessingUnit>(
             passwords, hexHash, params, paramsData.type, paramsData.version
         );
+    } else {
+        std::cout << "Unknwon mode " << mode << " user cuda or opencl" << std::endl;
     }
 
     return -1;
 }
 
 std::map<std::string, std::vector<std::string>> buildTasks(std::string leftlist, std::string wordlist){
-    // TODO: memory concerns
+    // TODO: AS of right now we load entire LL and WL in memory, will not fly for bigger hashlists
 
     // Open the input files.
     std::ifstream llFile(leftlist);
@@ -130,7 +155,7 @@ void worker(
     if (i >= 0) {
         // Lock the output stream before writing to it
         std::unique_lock<std::mutex> lock(outMutex);
-        outfile << taskName << ":" << taskData[i] << "\n";
+        outfile << taskName << ":" << taskData[i] << std::endl;
     }
 }
 
@@ -141,20 +166,18 @@ void processTasks(
 ) {
     std::ofstream outfile(outputFile);
     std::mutex outMutex;
-
-    const int max_workers = 60;
     std::vector<std::future<void>> futures;
 
     for (const auto &task : tasks) {
         // Wait for a worker to finish if the maximum number of active workers is reached
-        while (futures.size() >= max_workers) {
+        while (futures.size() >= MaxWorkers) {
             auto it = std::remove_if(futures.begin(), futures.end(), [](std::future<void> &f) {
                 return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
             });
 
             futures.erase(it, futures.end());
 
-            if (futures.size() < max_workers) {
+            if (futures.size() < MaxWorkers) {
                 break;
             }
 
@@ -175,7 +198,7 @@ void processTasks(
 
 int main(int argc, const char *const *argv) {
     if (argc != 5){
-        std::cout << "Usage: argon2-kraken [mode: opencl or cuda] [leftlist] [wordlist] [potfile]\n";
+        std::cout << "Usage: argon2-kraken [mode: opencl or cuda] [leftlist] [wordlist] [potfile]" << std::endl;
         return -1;
     }
 
@@ -184,6 +207,6 @@ int main(int argc, const char *const *argv) {
 
     processTasks(tasks, argv[1], argv[4]);
 
-    std::cout << "Done\n";
+    std::cout << "Done" << std::endl;
     return 0;
 }

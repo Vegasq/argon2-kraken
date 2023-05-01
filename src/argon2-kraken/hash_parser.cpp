@@ -1,21 +1,12 @@
 #include <algorithm>
+#include <string>
+#include <vector>
+#include <sstream>
 
 #include "argon2-gpu-common/argon2params.h"
-
-#include "base64.cpp"
-#include "strings_tools.cpp"
-
-// Argon2ParamsData holds the parsed Argon2 hash parameters
-struct Argon2ParamsData
-{
-    argon2::Type type;
-    argon2::Version version;
-    std::string hash;
-    std::string salt;
-    std::uint32_t timeCost;
-    std::uint32_t memoryCost;
-    std::uint32_t parallelism;
-};
+#include "base64.hpp"
+#include "strings_tools.hpp"
+#include "hash_parser.hpp"
 
 
 // GetArgon2Type returns the Argon2 type based on the input token

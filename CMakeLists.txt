@@ -23,6 +23,16 @@ else()
 endif()
 
 # https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
+# Fermi†    Kepler† Maxwell‡	Pascal	Volta	Turing	Ampere	Ada (Lovelace)	Hopper
+# sm_20     sm_30	sm_50	    sm_60	sm_70	sm_75	sm_80	sm_89	        sm_90
+# 	        sm_35	sm_52	    sm_61	sm_72
+#                                       (Xavier)		sm_86		            sm_90a (Thor)
+#	        sm_37	sm_53	    sm_62			        sm_87 (Orin)
+#
+# 1080TI -> sm_60
+# V100   -> sm_70
+# 3080TI -> sm_80
+#
 if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};
         -std=c++11;-O3;--ptxas-options=-v;-arch sm_60
@@ -101,16 +111,21 @@ target_link_libraries(argon2-gpu-test
 
 add_executable(argon2-kraken
     src/argon2-kraken/main.cpp
+    src/argon2-kraken/base64.cpp
+    src/argon2-kraken/hash_parser.cpp
+    src/argon2-kraken/strings_tools.cpp
 )
 
-# add_library(kraken SHARED
-#     src/argon2-kraken/main.cpp
-# )
-# target_include_directories(kraken PRIVATE src/argon2-kraken)
-# target_link_libraries(kraken
-#     argon2-cuda argon2-opencl argon2 -lOpenCL
-# )
-
+add_library(kraken SHARED
+    src/argon2-kraken/main.cpp
+    src/argon2-kraken/base64.cpp
+    src/argon2-kraken/hash_parser.cpp
+    src/argon2-kraken/strings_tools.cpp
+)
+target_include_directories(kraken PRIVATE src/argon2-kraken)
+target_link_libraries(kraken
+    argon2-cuda argon2-opencl argon2 -lOpenCL
+)
 
 target_include_directories(argon2-kraken PRIVATE src/argon2-kraken)
 target_link_libraries(argon2-kraken
